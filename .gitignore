@@ -134,7 +134,9 @@ dmypy.json
 
 #POSTGRES
 .postgres
+postgres/
 
 #LOG
 *.log
 .log
+log/
