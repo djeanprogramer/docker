@@ -5,6 +5,7 @@ import json
 import logging
 from datetime import date
 from models.model import WhTelecallSchema
+from fastapi import HTTPException
 
 def getLogEnvios(data_envio: str):
   #to_char(l.data_envio , 'DD/MM/YYYY') as data_envio ,
@@ -28,14 +29,11 @@ def getLogEnvios(data_envio: str):
     rs = cursor.fetchall()
     b.commit()
     cursor.close()
-    if rs == None:
-        return {"status_code": 404, "Mensagem": "Não encontrou resultados para a data informada."} 
-    else:
-        return rs
+    return rs
   except Exception as e:
     logging.error('StayBox_funcoes.py ' + str(e))
     logging.error(sql)
-    return {"status_code": 402, "Mensagem": "Data informada inválida. Utilize DDMMYYYY."}
+    raise HTTPException(status_code=400, detail="Data informada inválida. Utilize DDMMYYYY.")
 
 def getLogPortabilidades():
   #A VIEW Retorna toda a fila do dia corrente.

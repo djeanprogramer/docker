@@ -1,6 +1,8 @@
+import logging
 from datetime import date, datetime
 from http.client import HTTPException
-from fastapi import FastAPI, status, Body, Depends, Request
+#from urllib import response
+from fastapi import FastAPI, status, Body, Depends
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import StayBox_funcoes
@@ -11,14 +13,13 @@ from models.model import UserLoginSchema
 from auth.auth_bearer import JWTBearer
 from auth.auth_handler import signJWT
 from starlette.responses import FileResponse
-from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from fastapi.exception_handlers import (
     http_exception_handler,
     request_validation_exception_handler,
 )
-from fastapi.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
 
 favicon_path = './images/favicon.png'
 
@@ -48,9 +49,22 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-#Accept-CH: Sec-CH-UA-Mobile, Sec-CH-UA-Platform, Sec-CH-UA-Platform-Version, Sec-CH-UA
 
 # CODIGO AUXILIAR
+
+@app.exception_handler(StarletteHTTPException)
+async def custom_http_exception_handler(request, exc):
+    print(f"OPS Tchê! An HTTP error!: {repr(exc)}")
+    logging.error(f"OPS Tchê! An HTTP error!: {repr(exc)}")
+    return await http_exception_handler(request, exc)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    print(f"OPS Tchê! The client sent invalid data!: {exc}")
+    logging.error(f"OPS Tchê! The client sent invalid data!: {exc}")
+    return await request_validation_exception_handler(request, exc)
+
 def check_user(data: UserLoginSchema):
     if data.email == 'djean@tcheturbo.com.br':
         if  data.password=='testej' :
@@ -59,17 +73,6 @@ def check_user(data: UserLoginSchema):
         else: return False
     return False
 
-@app.exception_handler(StarletteHTTPException)
-async def custom_http_exception_handler(request, exc):
-    print(f"OPS! An HTTP error!: {repr(exc)}")
-    return await http_exception_handler(request, exc)
-
-
-@app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request, exc):
-    print(f"OPS! The client sent invalid data!: {exc}")
-    return await request_validation_exception_handler(request, exc)
-
 # ROTAS
 @app.get('/favicon.ico', include_in_schema=False)
 async def favicon():
@@ -77,23 +80,28 @@ async def favicon():
 
 @app.get("/", tags=["ROOT"])
 def raiz():
-    return {"Start":"API - Tche"}
+    return {"Start":"API - Tchê"}
 
-#, dependencies=[Depends(JWTBearer())]
-@app.get("/dash/log_envios/{data_envio}", status_code=status.HTTP_200_OK, tags=["DASH"])
+#, dependencies=[Depends(JWTBearer())] --status_code=status.HTTP_200_OK,
+@app.get("/dash/log_envios/{data_envio}", tags=["DASH"])
 def log_envios(data_envio: str):
     try:
-        d1 = datetime.strptime(data_envio, '%d%m%Y')
+        #d1 = datetime.strptime(data_envio, '%d%m%Y')
         log = StayBox_funcoes.getLogEnvios(data_envio)
         headers = {"Content-Type": "application/json",
                    "Access-Control-Allow-Methods": "GET",
                    "Access-Control-Allow-Headers": "*",
-                   "Access-Control-Allow-Origin": "*"
-        }
-        return JSONResponse(content=log, headers=headers)
-
+                   "Access-Control-Allow-Origin": "*"}
+        #print(type(log))
+        #print(len(log))
+        if len(log) > 0:
+            return JSONResponse(headers=headers, content=log)
+        else:
+            return JSONResponse(status_code = 404, content={'status':'false','message':'Nenhum resultado encontrado.'})
     except Exception as e: 
-        return {"status_code" : status.HTTP_404_NOT_FOUND, "Exception:": str(e)}
+        print(str(e))
+        logging.error('Exception: ' +  str(e))
+        return JSONResponse(status_code = status.HTTP_404_NOT_FOUND, content={'status':'false','message':str(e)})
 
 @app.get("/dash/log_portabilidades/", status_code=status.HTTP_200_OK, tags=["DASH"])
 def log_portabilidades():
@@ -122,7 +130,6 @@ def log_erros_portabilidades():
 
     except Exception as e: 
         return {"status_code" : status.HTTP_404_NOT_FOUND, "Exception:": str(e)}
-
 
 @app.post("/dash/cardcabecalho/", status_code=status.HTTP_200_OK, tags=["DASH"])
 def cards_cabecalho():
@@ -334,7 +341,6 @@ async def user_login(user: UserLoginSchema = Body(...)):
             
 @app.post("/fila/criar_fila_aviso_fim_impressao_boletos/", dependencies=[Depends(JWTBearer())], status_code=status.HTTP_202_ACCEPTED, tags=["FILA"])
 def criar_fila_aviso_fim_impressao_boletos():
-
     try:
         rs = SynSuite_funcoes.getFilaAvisoFimImpressaoBoletos()  #função que pega clientes que possuem boleto impresso
         if rs != None:

@@ -16,7 +16,7 @@ def verify_password(password: str, hashed_pass: str) -> bool:
     return password_context.verify(password, hashed_pass)
 
 try:
-    config_data = yaml.load(open("secrets.yml"), Loader=yaml.FullLoader)
+    config_data = yaml.load(open("./secrets.yml"), Loader=yaml.FullLoader)
     JWT_SECRET = config_data["auth_secret"]
     JWT_ALGORITHM = config_data["auth_algorithm"]
     JWT_ACCESS_TOKEN_EXPIRE = config_data["auth_access_token_expire_hours"]
