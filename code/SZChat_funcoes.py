@@ -98,6 +98,7 @@ def fEnviaWhatsapp(vCredenciais, vToken, vApi):
             'accept': 'application/json',
             'Authorization': 'Bearer ' + vToken,
         }
+        print(vCredenciais)
         whatsapp = requests.post(vApi, headers=my_headers, data=vCredenciais)
         print(whatsapp.json())
         return whatsapp.status_code
@@ -106,10 +107,14 @@ def fEnviaWhatsapp(vCredenciais, vToken, vApi):
         return 0
 
 def fNumeroCelularValido(pCelular: str):
-    if int(pCelular[4]) >= 6 and int(pCelular[2]) <= 9:
-        return pCelular
-    else:
+    try:
+        if int(pCelular[4]) >= 6 and int(pCelular[2]) <= 9:
+            return pCelular
+        else:
+            return ''
+    except:
         return ''
+
 
 def fgetCelular(pCelular, pTelefone: str):
     try:

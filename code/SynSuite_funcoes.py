@@ -63,6 +63,68 @@ def getAtivacoesDoDia(vTiposContratoIn: str):
     logging.error('2SYNSUITE_FUNCOES - getAtivacoesDoDia() ' + str(e))
     return 
 
+def getAtivacoesDoDiaMovel():
+  # 7 - Contratos Telefonia Móvel 
+  sql = f"""  select 
+                ce.date ,
+                p.id as cliente_id,	
+                c.id as contrato_id,
+                case 
+                when p.type_tx_id = '1' then
+                  'PJ'
+                when p.type_tx_id = '3' then
+                  'EX'
+                else
+                  'PF'		
+                  end as vPJPF,
+                  rtrim(p.name) as nome,
+                  p.phone as telefone,  
+                  p.cell_phone_1 as celular,
+                  p.email as email,
+                  c.v_stage as stage,
+                  c.v_status as status,
+                  c.amount ,
+                  c.collection_day ,
+                  c.contract_type_id,
+                  ai.final_checklist
+                from contracts c
+                  inner join people p 
+                    on p.id  = c.client_id
+                  inner join contract_events ce  
+                    on ce.contract_id  = c.id 
+                  inner join contract_event_types cet 
+                    on cet.id = ce.contract_event_type_id    
+                  inner join contract_types ct 
+                    on ct.id = c.contract_type_id 
+                  inner join contract_assignment_activations caa 
+                    on caa.contract_id = c.id  
+                  inner join assignments a 
+                    on a.id = caa.assignment_id 
+                  inner join assignment_incidents ai 
+                    on ai.assignment_id = a.id 
+                where c.id > 0
+                  and cet.id = 3
+                  and ce.date >= current_date  
+                  and c.v_stage = 'Aprovado'
+              and c.v_status = 'Normal'
+              and ct.id in (7)                
+              and ai.final_checklist_complete 
+              and ai.incident_type_id = 1334 --ATIVACAO MOVEL
+            order by 1   """
+  try:
+    b = bd_conecta.conecta_db_tche()
+    cursor = b.cursor()
+    cursor.execute(sql)
+    rs = cursor.fetchall()
+    cursor.close()
+    b.close()
+    logging.debug('BD TCHE: DESCONECTOU')
+    return rs
+  except Exception as e:
+    logging.error('2SYNSUITE_FUNCOES - getAtivacoesDoDia() ' + str(e))
+    return 
+
+
 def getAtivacoesDoDiaPlano(contrato: str):
   sql = f"""    select 
     ci.description 
