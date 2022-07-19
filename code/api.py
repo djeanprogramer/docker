@@ -54,14 +54,14 @@ app.add_middleware(
 
 @app.exception_handler(StarletteHTTPException)
 async def custom_http_exception_handler(request, exc):
-    print(f"OPS Tchê! An HTTP error!: {repr(exc)}")
+    #print(f"OPS Tchê! An HTTP error!: {repr(exc)}")
     logging.error(f"OPS Tchê! An HTTP error!: {repr(exc)}")
     return await http_exception_handler(request, exc)
 
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
-    print(f"OPS Tchê! The client sent invalid data!: {exc}")
+    #print(f"OPS Tchê! The client sent invalid data!: {exc}")
     logging.error(f"OPS Tchê! The client sent invalid data!: {exc}")
     return await request_validation_exception_handler(request, exc)
 
@@ -92,8 +92,6 @@ def log_envios(data_envio: str):
                    "Access-Control-Allow-Methods": "GET",
                    "Access-Control-Allow-Headers": "*",
                    "Access-Control-Allow-Origin": "*"}
-        #print(type(log))
-        #print(len(log))
         if len(log) > 0:
             return JSONResponse(headers=headers, content=log)
         else:
@@ -334,8 +332,11 @@ def post_criar_fila_serasa_spc(DDMMYYY_DDMMYYY: str):
 @app.post("/user/login", tags=["USER"])
 async def user_login(user: UserLoginSchema = Body(...)):
     if check_user(user):
-        headers = {"Content-Type": "application/json"}
-        return JSONResponse(content=signJWT(user.email), headers=headers)
+        headers = {"Content-Type": "application/json",
+                   "charset":"utf-8"}
+        conteudo = signJWT(user.email)
+        return conteudo
+        #return JSONResponse(content=conteudo, status_code=status.HTTP_200_OK, headers=headers)
     else:
         return {"status_code": 404, "Mensagem": "Usuário não encontrado."}
             

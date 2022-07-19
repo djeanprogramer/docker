@@ -149,12 +149,14 @@ def main():
                   vMsgEnvio = vMsgEnvio.replace("{vvalor}", vValor)
                   vMsgEnvio = vMsgEnvio.replace("{vdia}", str(a['collection_day']))
 
+                  vSubjec = f"""B. Vindas: {a['contrato_id']} - {a['nome']} """
+
                   credenciais = {
                      'platform_id': vCelular,
                      'channel_id': '615c4aa0a0d3c7001208e518',
                      'type': 'text',
                      'message': vMsgEnvio,
-                     'subject': 'API - MSG Boas Vindas',
+                     'subject': vSubjec,
                      'token': vUsr_Token,
                      'agent' : vUsr,
                      'attendance_id': vATENDDANCE_ID,
@@ -245,6 +247,8 @@ def main():
                     for campo in checklist:
                       if checklist[campo]['label'] == 'É PORTABILIDADE':
                           portabilidade = checklist[campo]['value']
+                      elif checklist[campo]['label'] == 'PORTABILIDADE':
+                          portabilidade = checklist[campo]['value']                          
                       elif checklist[campo]['label'] == 'DATA AGENDADA':
                           data_portabilidade = checklist[campo]['value']
                       elif checklist[campo]['label'] == 'HORA AGENDADA':
@@ -270,14 +274,14 @@ def main():
                   vNome = str(a['nome']).split()
                   vMsgmEnvio = vMsgmEnvio.replace("{nome}", vNome[0] )
 
-                  #print(vMsgmEnvio)
+                  vSubjec = f"""BV Móvel: {a['contrato_id']} - {a['nome']} """
 
                   credenciais = {
                       'platform_id': vCelular,
                       'channel_id': '615c4aa0a0d3c7001208e518',
                       'type': 'text',
                       'message': vMsgmEnvio,
-                      'subject': 'API - MSG Boas Vindas Móvel',
+                      'subject': vSubjec,
                       'token': vUsr_Token,
                       'agent' : vUsr,
                       'attendance_id': vATENDDANCE_ID,

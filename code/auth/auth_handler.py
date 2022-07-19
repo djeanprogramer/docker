@@ -1,6 +1,5 @@
 import logging
 import yaml
-import time
 from typing import Dict
 from datetime import datetime, timedelta
 import jwt
@@ -10,7 +9,6 @@ password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 def get_hashed_password(password: str) -> str:
     return password_context.hash(password)
-
 
 def verify_password(password: str, hashed_pass: str) -> bool:
     return password_context.verify(password, hashed_pass)
@@ -38,6 +36,7 @@ def signJWT(user_id: str) -> Dict[str, str]:
 
     try:
         token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+        print(token)
     except Exception as e:
       print('excessão : '+ str(e))  
 
