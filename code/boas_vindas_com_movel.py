@@ -2,15 +2,15 @@ import sys
 import logging
 import random
 from time import sleep
-
-from pydantic import validate_arguments
+#from pydantic import validate_arguments
 import SZChat_funcoes
 import SynSuite_funcoes
 import bd_conecta
 import json
 #import pyparsing
 #import time
-import hora
+from hora import getIsTimeSend
+from StayBox_funcoes import setFilaEnvio
 
 def setAtivacoesDoDia(vContratoID, vClienteID, vNome, vCelular, vStatus, vIDMensagem: str, vBD):
   sql = f"""INSERT INTO public.szchat_log_envio(
@@ -258,14 +258,14 @@ def main():
                       elif checklist[campo]['label'] == 'PLANO FAMILIA':
                           plano_familia = checklist[campo]['value']
 
-                  if portabilidade == '1':
+                  if portabilidade == '1': #faz este tratamento para evitar de ir a palavra "None" na mensagem do zap
                     if celular_portabilidade == None:
                       celular_portabilidade = ''
                     if hora_portabilidade == None:
                       hora_portabilidade = ''  
                     
                     if plano_familia == '1': 
-                      vMsgmEnvio = vMsgmEnvio.replace("{vportabilidade}", f"""👉A portabilidade do(s) número(s) *{celular_portabilidade}* foram agendadas para: *{data_portabilidade}* - *{hora_portabilidade}* """)
+                      vMsgmEnvio = vMsgmEnvio.replace("{vportabilidade}", f"""👉A portabilidade do(s) número(s) *{celular_portabilidade}* foram agendadas para: *{data_portabilidade}* - *{hora_portabilidade}.* """)
                     else:
                       vMsgmEnvio = vMsgmEnvio.replace("{vportabilidade}", f"""👉A portabilidade do número *{celular_portabilidade}* foi agendada para: *{data_portabilidade}* - *{hora_portabilidade}* """)
                   else:
@@ -274,7 +274,7 @@ def main():
                   vNome = str(a['nome']).split()
                   vMsgmEnvio = vMsgmEnvio.replace("{nome}", vNome[0] )
 
-                  vSubjec = f"""BV Móvel: {a['contrato_id']} - {a['nome']} """
+                  vSubjec = f"""B Móvel: {a['contrato_id']} - {a['nome']} """
 
                   credenciais = {
                       'platform_id': vCelular,
@@ -297,6 +297,42 @@ def main():
                   #depois de disparar no szchat, grava o registro no bdaux
                   setAtivacoesDoDia(a['contrato_id'], a['cliente_id'],a['nome'],vCelular, str(m), '7', b)
                   
+                  #se for portabilidade, já cria o registro na fila para o envio da mensagem de informação de troca de chip
+                  if portabilidade == '1': 
+                    vConfigPortabilidade = SZChat_funcoes.getMensagemConfig(8) #configuração de msg de portabilidade
+                    if vConfigPortabilidade != None:
+                      vMsgm = vConfigPortabilidade[0]['msgm']
+                      if a['vpjpf'] == 'PF':
+                        vNome = a['nome']
+                        vFirstName = vNome.split()
+                        vMsgm = vMsgm.replace("{nome}", vFirstName[0])
+                      else:
+                        vMsgm = vMsgm.replace("{nome}", "")
+                      
+                      if hora_portabilidade == '':
+                        vTextData = data_portabilidade
+                      else:
+                        vTextData = f"""{hora_portabilidade} - {hora_portabilidade}."""
+                      
+                      vMsgm = vMsgm.replace("{data_port}", vTextData)
+                      
+                      #grava na fila, para que o outro processo realize o envio
+                      try:
+                        setFilaEnvio(a['contrato_id'],
+                                     a['cliente_id'],
+                                     a['nome'],
+                                     vCelular,
+                                     '0',
+                                     vMsgm,
+                                     '8',
+                                     0,
+                                     b,
+                                     data_portabilidade
+                                     )
+                      except Exception as e:
+                        logging.error('SetFilaEnvio: ' + str(e))
+                        print('SetFilaEnvio: ' + str(e))
+
                   #atrasa o envio para não bloquear o número
                   if vIntervalo_segundos > 0:
                     rand = random.randint(vIntervalo_segundos, vIntervalo_segundos + 5)
@@ -329,10 +365,11 @@ if __name__ == '__main__':
 
   logging.info('BOAS_VINDAS - START')
   
-  if hora.getIsTimeSend:
+  #executar = getIsTimeSend
+  #print(executar)
+  if 1 == 1:
     print('BOAS_VINDAS - EXECUTANDO AGORA...')
     logging.info('BOAS_VINDAS - EXECUTANDO AGORA...')
     main()
   else:
-    print('BOAS_VINDAS - SLEEP FORA DE HORÁRIO...')
-    sleep(1200)
+    print('FORA DO INTERVALO DE HORAS...')

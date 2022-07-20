@@ -3,7 +3,7 @@ import bd_conecta
 import requests
 import json
 import logging
-from datetime import date
+from datetime import date, datetime
 from models.model import WhTelecallSchema
 from fastapi import HTTPException
 
@@ -111,7 +111,13 @@ def getCardCabecalhoTelecall():
     return {"status_code": 402, "Mensagem": "Não foi possível buscar as informações."}
 
 
-def setFilaEnvio(vContratoID, vClienteID, vNome, vCelular, vStatus, vMsgm, vMsgmID, vFrtID: str, vBD):
+def setFilaEnvio(vContratoID, vClienteID, vNome, vCelular, vStatus, vMsgm, vMsgmID, vFrtID: str, vBD, vData_Agendada = '' ):
+  if vData_Agendada == '':
+    data_atual = date.today()
+    vData = data_atual.strftime('%Y-%m-%d')
+  else:
+    vData = datetime.strptime(vData_Agendada, '%d/%m/%Y').date()
+
   sql = f"""INSERT INTO szchat_fila_envio(
                 contract_id, 
                 client_id, 
@@ -121,7 +127,8 @@ def setFilaEnvio(vContratoID, vClienteID, vNome, vCelular, vStatus, vMsgm, vMsgm
                 status, 
                 nome, 
                 celular,
-                frt_id)
+                frt_id, 
+                data_agendada)
               VALUES ({vContratoID},
                       {vClienteID},
                       {vMsgmID},
@@ -130,7 +137,8 @@ def setFilaEnvio(vContratoID, vClienteID, vNome, vCelular, vStatus, vMsgm, vMsgm
                       '{vStatus}',
                       '{vNome}',
                       '{vCelular}',
-                      {vFrtID});              
+                      {vFrtID},
+                      '{vData}');              
         """
   try:
     cursor = vBD.cursor()

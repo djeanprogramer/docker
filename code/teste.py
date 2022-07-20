@@ -1,11 +1,15 @@
 from flask import jsonify
 import SZChat_funcoes
 import SynSuite_funcoes
+import StayBox_funcoes
 import json
+import bd_conecta
 
 
-string = """ 'access_token': b'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiZGplYW5AdGNoZXR1cmJvLmNvbS5iciIsImV4cGlyZXMiOiIyMDIyLTA3LTIwVDEzOjI0OjUwLjA3MTE5NiJ9.-omYPOefwO7B-GxvsBrRn1ajKQcXFbmij_sdrnXbl9M' """
-print(string)
+b = bd_conecta.conecta_db_aux()
+StayBox_funcoes.setFilaEnvio(10,10,'jean','55999083699','0','teste jean','8',0,b)
+b.close
+print('foi pra conta')
 
 
 

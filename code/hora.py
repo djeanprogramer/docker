@@ -18,7 +18,6 @@ def getIsTimeSend():
             return (horaAtual in timeRangeManha)
         else:
             #falta validar se é feriado!
-
             timeRangeManha = DateTimeRange(manha_inicio, manha_fim)
             timeRangeTarde = DateTimeRange(tarde_inicio, tarde_fim)
             horaAtual = parse(str(datetime.now()))
