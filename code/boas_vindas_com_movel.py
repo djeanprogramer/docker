@@ -2,6 +2,7 @@ import sys
 import logging
 import random
 from time import sleep
+from webbrowser import get
 #from pydantic import validate_arguments
 import SZChat_funcoes
 import SynSuite_funcoes
@@ -42,22 +43,13 @@ def setAtivacoesDoDia(vContratoID, vClienteID, vNome, vCelular, vStatus, vIDMens
     logging.error(sql)
     return False
 
-def getJaEnviou(vCelular, vCliente, vMensagemID: str, vBD):
-  
-  if vCelular != '':
-    sql = f"""select l.id
-            from szchat_log_envio l
-            where l.mensagem_id = {vMensagemID}
-              and (l.status = '200' or l.status = '-1')
-              and date(l.data_envio) = date(current_date)
-              and l.celular = '{vCelular}'; """
-  else:
-    sql = f"""select l.id
-            from szchat_log_envio l
-            where l.mensagem_id = {vMensagemID}
-              and (l.status = '200' or l.status = '-1')
-              and date(l.data_envio) = date(current_date)
-              and l.client_id = {vCliente};"""
+def getJaEnviou(vContrato, vMensagemID: str, vBD):
+  sql = f"""select l.id
+          from szchat_log_envio l
+          where l.mensagem_id = {vMensagemID}
+            and (l.status = '200' or l.status = '-1')
+            and date(l.data_envio) = date(current_date)
+            and l.contract_id = {vContrato}"""
         
   try:
     cursor = vBD.cursor()
@@ -66,10 +58,10 @@ def getJaEnviou(vCelular, vCliente, vMensagemID: str, vBD):
     vBD.commit()
     cursor.close()
     if len(rs) > 0:
-      logging.debug('BOAS VINDAS - getJaEnviou - JÁ ENVIADO - Cliente/Celular/ID Mensagem Retorno: ' + str(vCliente) + '/' + str(vCelular) + '/' + str(rs[0]['id']))
+      logging.debug('BOAS VINDAS - getJaEnviou - JÁ ENVIADO - Contrato/Celular/ID Mensagem Retorno: ' + str(vContrato) + '/' + str(vContrato) + '/' + str(rs[0]['id']))
       return rs[0]['id']
     else:    
-      logging.debug('BOAS VINDAS - getJaEnviou - NÃO ENCONTROU - Cliente/Celular: ' + str(vCliente) + '/' + str(vCelular))
+      logging.debug('BOAS VINDAS - getJaEnviou - NÃO ENCONTROU - Contrato/Celular: ' + str(vContrato) + '/' + str(vContrato))
       return 0
     
   except Exception as e:
@@ -131,57 +123,54 @@ def main():
               
               #trata o número do celular para envio da mensagem
               vCelular = SZChat_funcoes.fgetCelular(a['celular'], a['telefone'])
-              res = getJaEnviou(vCelular, a['cliente_id'], '2', b) #retorna se já enviou a mensagem para o cliente/contrato
-              
-              if res == -1: #deu erro e para o processamento
+              if vCelular != '':
+                res = getJaEnviou(a['contrato_id'], '2', b) #aqui faz o tratamento para não enviar mais de uma vez ao mesmo cliente no dia
+                if res == -1: #deu erro e para o processamento
                   b.close()
                   break
-              elif res > 0: #já enviou mensagem de boas vindas para este número no dia de hoje
-                continue
-              else:
-                if vCelular != '':
-                  #mandar mensagem no szchat... pegar o retorno 200 é sucesso no envio.
+                elif res > 0: #já enviou mensagem de boas vindas para este número no dia de hoje
+                  continue
 
-                  vValor = str(a['amount'])
-                  vValor = 'R$ ' +  vValor.replace(".",",")
+                vValor = str(a['amount'])
+                vValor = 'R$ ' +  vValor.replace(".",",")
 
-                  vMsgEnvio = vMsgm.replace("{vplano}", lista_servicos)
-                  vMsgEnvio = vMsgEnvio.replace("{vvalor}", vValor)
-                  vMsgEnvio = vMsgEnvio.replace("{vdia}", str(a['collection_day']))
+                vMsgEnvio = vMsgm.replace("{vplano}", lista_servicos)
+                vMsgEnvio = vMsgEnvio.replace("{vvalor}", vValor)
+                vMsgEnvio = vMsgEnvio.replace("{vdia}", str(a['collection_day']))
 
-                  vSubjec = f"""B. Vindas: {a['contrato_id']} - {a['nome']} """
+                vSubjec = f"""B. Vindas: {a['contrato_id']} - {a['nome']} """
 
-                  credenciais = {
-                     'platform_id': vCelular,
-                     'channel_id': '615c4aa0a0d3c7001208e518',
-                     'type': 'text',
-                     'message': vMsgEnvio,
-                     'subject': vSubjec,
-                     'token': vUsr_Token,
-                     'agent' : vUsr,
-                     'attendance_id': vATENDDANCE_ID,
-                     'close_session': str(vClose_session)
-                  }
-                 
-                  m = SZChat_funcoes.fEnviaWhatsapp(credenciais, vTOKEN_APP, vApiSend)
-                  if m == 200:
-                    logging.info('Código de Status: 200. '+ str(vCelular) )
-                  else:
-                    logging.info('Código de Status: ' + str(m) + '. ' + str(vCelular) )
+                credenciais = {
+                    'platform_id': vCelular,
+                    'channel_id': '615c4aa0a0d3c7001208e518',
+                    'type': 'text',
+                    'message': vMsgEnvio,
+                    'subject': vSubjec,
+                    'token': vUsr_Token,
+                    'agent' : vUsr,
+                    'attendance_id': vATENDDANCE_ID,
+                    'close_session': str(vClose_session)
+                }
+                
+                m = SZChat_funcoes.fEnviaWhatsapp(credenciais, vTOKEN_APP, vApiSend)
+                if m == 200:
+                  logging.info('Código de Status: 200. '+ str(vCelular) )
+                else:
+                  logging.info('Código de Status: ' + str(m) + '. ' + str(vCelular) )
 
-                  #depois de disparar no szchat, grava o registro no bdaux
-                  setAtivacoesDoDia(a['contrato_id'], a['cliente_id'],a['nome'],vCelular, str(m), '2', b)
-                  
-                  #atrasa o envio para não bloquear o número
-                  if vIntervalo_segundos > 0:
-                    rand = random.randint(vIntervalo_segundos, vIntervalo_segundos + 5)
-                    logging.debug('BOAS_VINDAS - SLEEP - ' + str(rand))
-                    sleep(rand)
-                  else:
-                    logging.info('BOAS VINDAS - Por favor, defina o campo de intervalo de mensagens na tabela de configuração')
-                    b.close()
-                    break;                  
-              
+                #depois de disparar no szchat, grava o registro no bdaux
+                setAtivacoesDoDia(a['contrato_id'], a['cliente_id'],a['nome'],vCelular, str(m), '2', b)
+                
+                #atrasa o envio para não bloquear o número
+                if vIntervalo_segundos > 0:
+                  rand = random.randint(vIntervalo_segundos, vIntervalo_segundos + 5)
+                  logging.debug('BOAS_VINDAS - SLEEP - ' + str(rand))
+                  sleep(rand)
+                else:
+                  logging.info('BOAS VINDAS - Por favor, defina o campo de intervalo de mensagens na tabela de configuração')
+                  b.close()
+                  break;                  
+            
               if vCelular == '':
                 #não possui um celular válido - grava log de erro
                 logging.info('BOAS_VINDAS -  SEM CELULAR NO CADASTRO. Contrato/Cliente:' + str(a['contrato_id']) + '/' + str(a['cliente_id']) )
@@ -216,133 +205,130 @@ def main():
               
               #trata o número do celular para envio da mensagem
               vCelular = SZChat_funcoes.fgetCelular(a['celular'], a['telefone'])
-              res = getJaEnviou(vCelular, a['cliente_id'], '7', b) #retorna se já enviou a mensagem para o cliente/contrato
-              
-              if res == -1: #deu erro e para o processamento
+              if vCelular != '':
+                res = getJaEnviou(a['contrato_id'], '7', b) #aqui faz o tratamento para não enviar mais de uma vez ao mesmo cliente no dia
+                if res == -1: #deu erro e para o processamento
                   b.close()
                   break
-              elif res > 0: #já enviou mensagem de boas vindas para este número no dia de hoje
-                continue
-              else:
-                if vCelular != '':
-                  #mandar mensagem no szchat... pegar o retorno 200 é sucesso no envio.
-                  vNome = ''
+                elif res > 0: #já enviou mensagem de boas vindas para este número no dia de hoje
+                  continue
 
-                  vValor = str(a['amount'])
-                  vValor = 'R$ ' +  vValor.replace(".",",")
+                vNome = ''
 
-                  vMsgmEnvio = vMsgm.replace("{vplano}", lista_servicos)
-                  vMsgmEnvio = vMsgmEnvio.replace("{vvalor}", vValor)
-                  vMsgmEnvio = vMsgmEnvio.replace("{vdia}", str(a['collection_day']))
+                vValor = str(a['amount'])
+                vValor = 'R$ ' +  vValor.replace(".",",")
 
-                  #CHECK LIST FINAL
-                  checklist = json.loads(str(a['final_checklist']))
-                  if checklist != None:
-                    portabilidade = None
-                    data_portabilidade = None
-                    hora_portabilidade = None
-                    celular_portabilidade = None
-                    plano_familia = None
+                vMsgmEnvio = vMsgm.replace("{vplano}", lista_servicos)
+                vMsgmEnvio = vMsgmEnvio.replace("{vvalor}", vValor)
+                vMsgmEnvio = vMsgmEnvio.replace("{vdia}", str(a['collection_day']))
 
-                    for campo in checklist:
-                      if checklist[campo]['label'] == 'É PORTABILIDADE':
-                          portabilidade = checklist[campo]['value']
-                      elif checklist[campo]['label'] == 'PORTABILIDADE':
-                          portabilidade = checklist[campo]['value']                          
-                      elif checklist[campo]['label'] == 'DATA AGENDADA':
-                          data_portabilidade = checklist[campo]['value']
-                      elif checklist[campo]['label'] == 'HORA AGENDADA':
-                          hora_portabilidade = checklist[campo]['value']
-                      elif checklist[campo]['label'] == 'CELULAR':
-                          celular_portabilidade = checklist[campo]['value']
-                      elif checklist[campo]['label'] == 'PLANO FAMILIA':
-                          plano_familia = checklist[campo]['value']
+                #CHECK LIST FINAL
+                checklist = json.loads(str(a['final_checklist']))
+                if checklist != None:
+                  portabilidade = None
+                  data_portabilidade = None
+                  hora_portabilidade = None
+                  celular_portabilidade = None
+                  plano_familia = None
 
-                  if portabilidade == '1': #faz este tratamento para evitar de ir a palavra "None" na mensagem do zap
-                    if celular_portabilidade == None:
-                      celular_portabilidade = ''
-                    if hora_portabilidade == None:
-                      hora_portabilidade = ''  
-                    
-                    if plano_familia == '1': 
-                      vMsgmEnvio = vMsgmEnvio.replace("{vportabilidade}", f"""👉A portabilidade do(s) número(s) *{celular_portabilidade}* foram agendadas para: *{data_portabilidade}* - *{hora_portabilidade}.* """)
-                    else:
-                      vMsgmEnvio = vMsgmEnvio.replace("{vportabilidade}", f"""👉A portabilidade do número *{celular_portabilidade}* foi agendada para: *{data_portabilidade}* - *{hora_portabilidade}* """)
-                  else:
-                    vMsgmEnvio = vMsgmEnvio.replace("{vportabilidade}", "")
+                  for campo in checklist:
+                    if checklist[campo]['label'] == 'É PORTABILIDADE':
+                        portabilidade = checklist[campo]['value']
+                    elif checklist[campo]['label'] == 'PORTABILIDADE':
+                        portabilidade = checklist[campo]['value']                          
+                    elif checklist[campo]['label'] == 'DATA AGENDADA':
+                        data_portabilidade = checklist[campo]['value']
+                    elif checklist[campo]['label'] == 'HORA AGENDADA':
+                        hora_portabilidade = checklist[campo]['value']
+                    elif checklist[campo]['label'] == 'CELULAR':
+                        celular_portabilidade = checklist[campo]['value']
+                    elif checklist[campo]['label'] == 'PLANO FAMILIA':
+                        plano_familia = checklist[campo]['value']
 
-                  vNome = str(a['nome']).split()
-                  vMsgmEnvio = vMsgmEnvio.replace("{nome}", vNome[0] )
-
-                  vSubjec = f"""B Móvel: {a['contrato_id']} - {a['nome']} """
-
-                  credenciais = {
-                      'platform_id': vCelular,
-                      'channel_id': '615c4aa0a0d3c7001208e518',
-                      'type': 'text',
-                      'message': vMsgmEnvio,
-                      'subject': vSubjec,
-                      'token': vUsr_Token,
-                      'agent' : vUsr,
-                      'attendance_id': vATENDDANCE_ID,
-                      'close_session': str(vClose_session)
-                  }
+                if portabilidade == '1': #faz este tratamento para evitar de ir a palavra "None" na mensagem do zap
+                  if celular_portabilidade == None:
+                    celular_portabilidade = ''
+                  if hora_portabilidade == None:
+                    hora_portabilidade = ''  
                   
-                  m = SZChat_funcoes.fEnviaWhatsapp(credenciais, vTOKEN_APP, vApiSend)
-                  if m == 200:
-                    logging.info('Código de Status: 200. '+ str(vCelular) )
+                  if plano_familia == '1': 
+                    vMsgmEnvio = vMsgmEnvio.replace("{vportabilidade}", f"""👉A portabilidade do(s) número(s) *{celular_portabilidade}* foram agendadas para: *{data_portabilidade}* - *{hora_portabilidade}.* """)
                   else:
-                    logging.info('Código de Status: ' + str(m) + '. ' + str(vCelular) )
+                    vMsgmEnvio = vMsgmEnvio.replace("{vportabilidade}", f"""👉A portabilidade do número *{celular_portabilidade}* foi agendada para: *{data_portabilidade}* - *{hora_portabilidade}* """)
+                else:
+                  vMsgmEnvio = vMsgmEnvio.replace("{vportabilidade}", "")
 
-                  #depois de disparar no szchat, grava o registro no bdaux
-                  setAtivacoesDoDia(a['contrato_id'], a['cliente_id'],a['nome'],vCelular, str(m), '7', b)
-                  
-                  #se for portabilidade, já cria o registro na fila para o envio da mensagem de informação de troca de chip
-                  if portabilidade == '1': 
-                    vConfigPortabilidade = SZChat_funcoes.getMensagemConfig(8) #configuração de msg de portabilidade
-                    if vConfigPortabilidade != None:
-                      vMsgm = vConfigPortabilidade[0]['msgm']
-                      if a['vpjpf'] == 'PF':
-                        vNome = a['nome']
-                        vFirstName = vNome.split()
-                        vMsgm = vMsgm.replace("{nome}", vFirstName[0])
-                      else:
-                        vMsgm = vMsgm.replace("{nome}", "")
-                      
-                      if hora_portabilidade == '':
-                        vTextData = data_portabilidade
-                      else:
-                        vTextData = f"""{hora_portabilidade} - {hora_portabilidade}."""
-                      
-                      vMsgm = vMsgm.replace("{data_port}", vTextData)
-                      
-                      #grava na fila, para que o outro processo realize o envio
-                      try:
-                        setFilaEnvio(a['contrato_id'],
-                                     a['cliente_id'],
-                                     a['nome'],
-                                     vCelular,
-                                     '0',
-                                     vMsgm,
-                                     '8',
-                                     0,
-                                     b,
-                                     data_portabilidade
-                                     )
-                      except Exception as e:
-                        logging.error('SetFilaEnvio: ' + str(e))
-                        print('SetFilaEnvio: ' + str(e))
+                vNome = str(a['nome']).split()
+                vMsgmEnvio = vMsgmEnvio.replace("{nome}", vNome[0] )
 
-                  #atrasa o envio para não bloquear o número
-                  if vIntervalo_segundos > 0:
-                    rand = random.randint(vIntervalo_segundos, vIntervalo_segundos + 5)
-                    logging.debug('BOAS_VINDAS - SLEEP - ' + str(rand))
-                    sleep(rand)
-                  else:
-                    logging.info('BOAS VINDAS - Por favor, defina o campo de intervalo de mensagens na tabela de configuração')
-                    b.close()
-                    break;                  
+                vSubjec = f"""B Móvel: {a['contrato_id']} - {a['nome']} """
+
+                credenciais = {
+                    'platform_id': vCelular,
+                    'channel_id': '615c4aa0a0d3c7001208e518',
+                    'type': 'text',
+                    'message': vMsgmEnvio,
+                    'subject': vSubjec,
+                    'token': vUsr_Token,
+                    'agent' : vUsr,
+                    'attendance_id': vATENDDANCE_ID,
+                    'close_session': str(vClose_session)
+                }
                 
+                m = SZChat_funcoes.fEnviaWhatsapp(credenciais, vTOKEN_APP, vApiSend)
+                if m == 200:
+                  logging.info('Código de Status: 200. '+ str(vCelular) )
+                else:
+                  logging.info('Código de Status: ' + str(m) + '. ' + str(vCelular) )
+
+                #depois de disparar no szchat, grava o registro no bdaux
+                setAtivacoesDoDia(a['contrato_id'], a['cliente_id'],a['nome'],vCelular, str(m), '7', b)
+                
+                #se for portabilidade, já cria o registro na fila para o envio da mensagem de informação de troca de chip
+                if portabilidade == '1': 
+                  vConfigPortabilidade = SZChat_funcoes.getMensagemConfig(8) #configuração de msg de portabilidade
+                  if vConfigPortabilidade != None:
+                    vMsgm = vConfigPortabilidade[0]['msgm']
+                    if a['vpjpf'] == 'PF':
+                      vNome = a['nome']
+                      vFirstName = vNome.split()
+                      vMsgm = vMsgm.replace("{nome}", vFirstName[0])
+                    else:
+                      vMsgm = vMsgm.replace("{nome}", "")
+                    
+                    if hora_portabilidade == '':
+                      vTextData = data_portabilidade
+                    else:
+                      vTextData = f"""{data_portabilidade} - {hora_portabilidade}."""
+                    
+                    vMsgm = vMsgm.replace("{data_port}", vTextData)
+                    
+                    #grava na fila, para que o outro processo realize o envio
+                    try:
+                      setFilaEnvio(a['contrato_id'],
+                                    a['cliente_id'],
+                                    a['nome'],
+                                    vCelular,
+                                    '0',
+                                    vMsgm,
+                                    '8',
+                                    0,
+                                    b,
+                                    data_portabilidade
+                                    )
+                    except Exception as e:
+                      logging.error('SetFilaEnvio: ' + str(e))
+
+                #atrasa o envio para não bloquear o número
+                if vIntervalo_segundos > 0:
+                  rand = random.randint(vIntervalo_segundos, vIntervalo_segundos + 5)
+                  logging.debug('BOAS_VINDAS - SLEEP - ' + str(rand))
+                  sleep(rand)
+                else:
+                  logging.info('BOAS VINDAS - Por favor, defina o campo de intervalo de mensagens na tabela de configuração')
+                  b.close()
+                  break;                  
+              
                 if vCelular == '':
                   #não possui um celular válido - grava log de erro
                   logging.info('BOAS_VINDAS -  SEM CELULAR NO CADASTRO. Contrato/Cliente:' + str(a['contrato_id']) + '/' + str(a['cliente_id']) )
@@ -356,20 +342,10 @@ def main():
 
 if __name__ == '__main__':
   Log_Format = "%(levelname)s %(asctime)s - %(message)s"
-  #Log_Level = logging.debug #logging.ERROR
-
   logging.basicConfig(filename = "logTT.log",
                     format = Log_Format, 
                     level = logging.INFO,
                     encoding='utf-8')
 
   logging.info('BOAS_VINDAS - START')
-  
-  #executar = getIsTimeSend
-  #print(executar)
-  if 1 == 1:
-    print('BOAS_VINDAS - EXECUTANDO AGORA...')
-    logging.info('BOAS_VINDAS - EXECUTANDO AGORA...')
-    main()
-  else:
-    print('FORA DO INTERVALO DE HORAS...')
+  main()

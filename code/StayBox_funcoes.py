@@ -174,6 +174,28 @@ def getFilaEnvio(vMsgmID: str, vBD):
     print(str(e))
     return None
 
+def getFilaEnvioPortabilidade(vBD):
+  sql = f"""SELECT f.* 
+            FROM szchat_fila_envio f
+            WHERE f.mensagem_id = '8'
+              and f.data_agendada = current_date + 1
+            ORDER BY f.data_fila """        
+  try:
+    cursor = vBD.cursor()
+    cursor.execute(sql)
+    rs = cursor.fetchall()
+    vBD.commit()
+    cursor.close()
+    if rs == None:
+        return None
+    else:
+        return rs
+  except Exception as e:
+    logging.error('getFilaEnvioPortabilidade ' + str(e))
+    logging.error(sql)
+    print(str(e))
+    return None
+
 def dropFilaEnvioItem(vIDFila: str, vBD):
   sql = f"""delete from szchat_fila_envio f 
            where f.id = {vIDFila} """        
