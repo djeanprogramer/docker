@@ -10,6 +10,7 @@ import StayBox_funcoes
 import SynSuite_funcoes
 import bd_conecta
 import SZChat_funcoes
+import docker
 from models.model import UserLoginSchema 
 from auth.auth_bearer import JWTBearer
 from auth.auth_handler import signJWT
@@ -391,7 +392,8 @@ def criar_fila_aviso_fim_impressao_boletos():
 @app.get("/exec/fila_cobranca/", tags=["EXEC"])
 def exec_fila_cobranca():
     try:
-        os.system('docker run --rm --name API_Exec_Cob -e script=exec_fila_cobranca.py serviceszchat')
+        client = docker.from_env()
+        client.containers.run('serviceszchat', environment=['script=exec_fila_cobranca.py'] , detach=True, remove=True, name='Exec_AvisoBloq')
     except Exception as e: 
         print(str(e))
         return {"status_code": 402, "Mensagem": "Erro ao executar script.", "Exception:": str(e)}    
@@ -399,7 +401,8 @@ def exec_fila_cobranca():
 @app.get("/exec/fila_aviso_bloqueio/", tags=["EXEC"])
 def exec_fila_aviso_bloqueio():
     try:
-        os.system('docker run --rm --name API_Exec_Bloqueio -e script=exec_fila_aviso_bloqueio.py serviceszchat')
+        client = docker.from_env()
+        client.containers.run('serviceszchat', environment=['script=exec_fila_aviso_bloqueio.py'] , detach=True, remove=True, name='Exec_AvisoBloq')
     except Exception as e: 
         print(str(e))
         return {"status_code": 402, "Mensagem": "Erro ao executar script.", "Exception:": str(e)}    
@@ -407,7 +410,8 @@ def exec_fila_aviso_bloqueio():
 @app.get("/exec/fila_serasa_spc/", tags=["EXEC"])
 def exec_fila_aviso_bloqueio():
     try:
-        os.system('docker run --rm --name API_Exec_Serasa -e script=exec_fila_serasa_spc.py serviceszchat')
+        client = docker.from_env()
+        client.containers.run('serviceszchat', environment=['script=exec_fila_serasa_spc.py'] , detach=True, remove=True, name='Exec_Serasa')
     except Exception as e: 
         print(str(e))
         return {"status_code": 402, "Mensagem": "Erro ao executar script.", "Exception:": str(e)}    

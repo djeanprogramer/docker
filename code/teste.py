@@ -4,7 +4,6 @@ import SynSuite_funcoes
 import StayBox_funcoes
 import json
 import bd_conecta
-from hora import getIsTimeSend
 
 import docker
 client = docker.from_env()
