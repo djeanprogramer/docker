@@ -6,15 +6,16 @@ import json
 import bd_conecta
 from hora import getIsTimeSend
 
+import docker
+client = docker.from_env()
+client.containers.run('serviceszchat', environment=['script=exec_fila_aviso_bloqueio.py'] , detach=True, remove=True, name='EXEC_AvisoB')
 
 #b = bd_conecta.conecta_db_aux()
 #StayBox_funcoes.setFilaEnvio(10,10,'jean','55999083699','0','teste jean','8',0,b)
 #b.close
 #print('foi pra conta')
-
-retorno = getIsTimeSend
-print(retorno)
-
+#retorno = getIsTimeSend
+#print(retorno)
 #rs = SynSuite_funcoes.getAtivacoesDoDiaMovel()
 #for i in rs:
 #    lista = json.loads(str(i['final_checklist']))
