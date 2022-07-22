@@ -4,14 +4,16 @@ import SynSuite_funcoes
 import StayBox_funcoes
 import json
 import bd_conecta
+from hora import getIsTimeSend
 
 
-b = bd_conecta.conecta_db_aux()
-StayBox_funcoes.setFilaEnvio(10,10,'jean','55999083699','0','teste jean','8',0,b)
-b.close
-print('foi pra conta')
+#b = bd_conecta.conecta_db_aux()
+#StayBox_funcoes.setFilaEnvio(10,10,'jean','55999083699','0','teste jean','8',0,b)
+#b.close
+#print('foi pra conta')
 
-
+retorno = getIsTimeSend
+print(retorno)
 
 #rs = SynSuite_funcoes.getAtivacoesDoDiaMovel()
 #for i in rs:

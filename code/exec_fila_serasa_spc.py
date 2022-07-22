@@ -4,11 +4,10 @@ import SZChat_funcoes
 import StayBox_funcoes 
 import SynSuite_funcoes
 import bd_conecta
-from hora import getIsTimeSend
 import sys
 import random
 from time import sleep
-from datetime import datetime
+from hora import getIsTimeSend
 
 def main():
     print('START OK!')
@@ -115,5 +114,5 @@ if __name__ == '__main__':
                     format = Log_Format, 
                     level = logging.DEBUG,
                     encoding='utf-8')
-  logging.info('START')
-  main()
+  if getIsTimeSend():  
+    main()

@@ -1,17 +1,15 @@
 import logging
-from pydoc import doc
 import SZChat_funcoes
 import StayBox_funcoes 
 import SynSuite_funcoes
 import bd_conecta
-from hora import getIsTimeSend
 import sys
 import random
 from time import sleep
 from datetime import datetime
+from hora import getIsTimeSend
 
 def main():
-    print('START OK!')
     #1 - CONECTA NO BD AUX E BUSCA MENSAGENS DA FILA PARA ENVIO
     b = bd_conecta.conecta_db_aux()
     mensagens = StayBox_funcoes.getFilaEnvio('1', b) #1 = cobrança
@@ -62,7 +60,8 @@ def main():
             logging.debug('COBRANÇA - TOKEN_APP: ' + vTOKEN_APP)
 
         for m in  mensagens:
-          if getIsTimeSend: #se está em horário comercial
+          vPodeEnviar = getIsTimeSend()
+          if vPodeEnviar: #se está em horário comercial
             b = bd_conecta.conecta_db_aux()
             vCelular = m['celular']
             vMsgm = m['msgm']
@@ -115,17 +114,19 @@ def main():
               logging.info('COBRANÇA - Por favor, defina o campo de intervalo de mensagens na tabela de configuração')
               b.close()
               sys.exit('DEFINA O SLEEP NA CONFIGURAÇÃO DA MENSAGEM');                  
-        
+          else:
+            print('Fora de Horário')
+
         SZChat_funcoes.fLogoutToken(vTOKEN_APP, vApiLogout)
+        print('END OK')
 
 if __name__ == '__main__':
   Log_Format = "%(levelname)s %(asctime)s - %(message)s"
-  #Log_Level = logging.debug #logging.ERROR
-
+  
   logging.basicConfig(filename = "logTT.log",
                     filemode = "w",
                     format = Log_Format, 
                     level = logging.DEBUG,
                     encoding='utf-8')
-  logging.info('START')
-  main()
+  if getIsTimeSend():  
+    main()

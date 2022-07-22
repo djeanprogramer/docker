@@ -8,9 +8,9 @@ def getIsTimeSend():
         return False
     else:
         manha_inicio = parse("08:00:00") # substituir pelo horário que vem do banco de dados
-        manha_fim = parse("12:00:00")
+        manha_fim = parse("11:50:00")
         tarde_inicio = parse("13:30:00")
-        tarde_fim = parse("18:00:00")
+        tarde_fim = parse("17:50:00")
 
         if datetime.now().weekday() == 6: #sábado trabaha-se somente de manhã
             timeRangeManha = DateTimeRange(manha_inicio, manha_fim)

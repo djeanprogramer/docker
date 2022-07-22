@@ -1,3 +1,4 @@
+#ESSA FILA É EXECUTADA ATRAVÉS DO CRONTAB, as 9hs, 14hs e 16hs
 import logging
 from pydoc import doc
 import SZChat_funcoes

@@ -1,3 +1,4 @@
+import os
 import logging
 from datetime import date, datetime
 from http.client import HTTPException
@@ -386,3 +387,27 @@ def criar_fila_aviso_fim_impressao_boletos():
             
     except Exception as e: 
         return {"status_code": 402, "Mensagem": "Dados informados inválidos.", "Exception:": str(e)}    
+
+@app.get("/exec/fila_cobranca/", tags=["EXEC"])
+def exec_fila_cobranca():
+    try:
+        os.system('docker run --rm --name API_Exec_Cob -e script=exec_fila_cobranca.py serviceszchat')
+    except Exception as e: 
+        print(str(e))
+        return {"status_code": 402, "Mensagem": "Erro ao executar script.", "Exception:": str(e)}    
+
+@app.get("/exec/fila_aviso_bloqueio/", tags=["EXEC"])
+def exec_fila_aviso_bloqueio():
+    try:
+        os.system('docker run --rm --name API_Exec_Bloqueio -e script=exec_fila_aviso_bloqueio.py serviceszchat')
+    except Exception as e: 
+        print(str(e))
+        return {"status_code": 402, "Mensagem": "Erro ao executar script.", "Exception:": str(e)}    
+
+@app.get("/exec/fila_serasa_spc/", tags=["EXEC"])
+def exec_fila_aviso_bloqueio():
+    try:
+        os.system('docker run --rm --name API_Exec_Serasa -e script=exec_fila_serasa_spc.py serviceszchat')
+    except Exception as e: 
+        print(str(e))
+        return {"status_code": 402, "Mensagem": "Erro ao executar script.", "Exception:": str(e)}    

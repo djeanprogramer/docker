@@ -2,13 +2,12 @@ import logging
 from pydoc import doc
 import SZChat_funcoes
 import StayBox_funcoes 
-import SynSuite_funcoes
 import bd_conecta
-from hora import getIsTimeSend
 import sys
 import random
 from time import sleep
-from datetime import datetime
+from hora import getIsTimeSend
+
 
 def main():
     print('START OK!')
@@ -62,52 +61,53 @@ def main():
             logging.debug('AVISO BLOQUEIO - TOKEN_APP: ' + vTOKEN_APP)
 
         for m in  mensagens:
-          b = bd_conecta.conecta_db_aux()
-          vCelular = m['celular']
-          vMsgm = m['msgm']
+          vSend = getIsTimeSend()
+          if vSend: #se está em horário comercial
+            b = bd_conecta.conecta_db_aux()
+            vCelular = m['celular']
+            vMsgm = m['msgm']
 
-          vAss = 'AVISO BLOQUEIO - ' +  m['nome']
-          credenciais = {
-              'platform_id': vCelular,
-              'channel_id': '615c4aa0a0d3c7001208e518',
-              'type': 'text',
-              'message': vMsgm,
-              'subject': vAss,
-              'token': vUsr_Token,
-              'agent' : vUsr,
-              'attendance_id': vATENDDANCE_ID,
-              'close_session': str(vClosed_session)
-          }
+            vAss = 'AVISO BLOQUEIO - ' +  m['nome']
+            credenciais = {
+                'platform_id': vCelular,
+                'channel_id': '615c4aa0a0d3c7001208e518',
+                'type': 'text',
+                'message': vMsgm,
+                'subject': vAss,
+                'token': vUsr_Token,
+                'agent' : vUsr,
+                'attendance_id': vATENDDANCE_ID,
+                'close_session': str(vClosed_session)
+            }
 
-          send = SZChat_funcoes.fEnviaWhatsapp(credenciais, vTOKEN_APP, vApiSend)
-          if send == 200:
-            logging.info('Código de Status: 200. '+ str(vCelular) )
-          else:
-            logging.info('Código de Status: ' + str(send) + '. ' + str(vCelular) )
-          
-          #depois de disparar no szchat, grava o registro no bdaux
-          StayBox_funcoes.setLogEnvio('3', m['contract_id'], m['client_id'], m['nome'], vCelular, str(send), 0, b)
+            send = SZChat_funcoes.fEnviaWhatsapp(credenciais, vTOKEN_APP, vApiSend)
+            if send == 200:
+              logging.info('Código de Status: 200. '+ str(vCelular) )
+            else:
+              logging.info('Código de Status: ' + str(send) + '. ' + str(vCelular) )
+            
+            #depois de disparar no szchat, grava o registro no bdaux
+            StayBox_funcoes.setLogEnvio('3', m['contract_id'], m['client_id'], m['nome'], vCelular, str(send), 0, b)
 
-          #apaga da FILA
-          StayBox_funcoes.dropFilaEnvioItem(m['id'], b)
+            #apaga da FILA
+            StayBox_funcoes.dropFilaEnvioItem(m['id'], b)
 
-          #atrasa o envio para não bloquear o número
-          if vIntervalo_segundos > 0:
-            b.close()
-            rand = random.randint(vIntervalo_segundos, vIntervalo_segundos + 5)
-            logging.debug('AVISO BLOQUEIO - SLEEP - ' + str(rand))
-            print(rand)
-            sleep(rand)
-          else:
-            logging.info('AVISO BLOQUEIO - Por favor, defina o campo de intervalo de mensagens na tabela de configuração')
-            b.close()
-            sys.exit('DEFINA O SLEEP NA CONFIGURAÇÃO DA MENSAGEM');                  
+            #atrasa o envio para não bloquear o número
+            if vIntervalo_segundos > 0:
+              b.close()
+              rand = random.randint(vIntervalo_segundos, vIntervalo_segundos + 5)
+              logging.debug('AVISO BLOQUEIO - SLEEP - ' + str(rand))
+              print(rand)
+              sleep(rand)
+            else:
+              logging.info('AVISO BLOQUEIO - Por favor, defina o campo de intervalo de mensagens na tabela de configuração')
+              b.close()
+              sys.exit('DEFINA O SLEEP NA CONFIGURAÇÃO DA MENSAGEM');                  
         
         SZChat_funcoes.fLogoutToken(vTOKEN_APP, vApiLogout)
 
 if __name__ == '__main__':
   Log_Format = "%(levelname)s %(asctime)s - %(message)s"
-  #Log_Level = logging.debug #logging.ERROR
 
   logging.basicConfig(filename = "logTT.log",
                     filemode = "w",
@@ -115,4 +115,8 @@ if __name__ == '__main__':
                     level = logging.DEBUG,
                     encoding='utf-8')
   logging.info('START')
-  main()
+
+  venvia = getIsTimeSend()
+  print(venvia)
+  if venvia:  
+    main()
