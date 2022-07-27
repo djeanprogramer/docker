@@ -124,7 +124,6 @@ def getAtivacoesDoDiaMovel():
     logging.error('2SYNSUITE_FUNCOES - getAtivacoesDoDia() ' + str(e))
     return 
 
-
 def getAtivacoesDoDiaPlano(contrato: str):
   sql = f"""    select 
     ci.description 
@@ -207,6 +206,42 @@ def getPrazoMedioRecebimento():
   except Exception as e:
     logging.error('SYNSUITE_FUNCOES - getPrazoMedioRecebimento() ' + str(e))
     return     
+
+def getFilaAvisoBloqueioMovel(data_inicial, data_final: date):
+  sql = f""" select p.id as client_id,	
+                    frt.contract_id ,       
+                    p.name,
+                    p.phone, 
+                    p.cell_phone_1,
+                    p.type_tx_id,
+                    frt.id as frt_id,
+                    frt.expiration_date
+            from financial_receivable_titles frt 
+              inner join people p 
+                on p.id  = frt.client_id
+              inner join contracts c 
+                on c.id  = frt.contract_id                     
+              inner join financial_operations fo 
+                on fo.id = frt.financial_operation_id  
+            where frt.balance > 0   
+              and not frt.deleted
+              and ((frt.expiration_date >= '{data_inicial}') and (frt.expiration_date <= '{data_final}')) 
+              and frt.bill_title_id is null
+              and not frt.renegotiated 
+              and c.v_status = 'Normal'
+              and frt.financial_operation_id = 63 
+            order by 5 """
+  try:
+    b = bd_conecta.conecta_db_tche()
+    cursor = b.cursor()
+    cursor.execute(sql)
+    rs = cursor.fetchall()
+    cursor.close()
+    b.close()
+    return rs
+  except Exception as e:
+    logging.error('SYNSUITE_FUNCOES - getFilaAvisoBloqueioMovel() ' + str(e))
+    return 
 
 def getFilaParcelaVencida(data_inicial, data_final: date):
   vDesconsiderarContratos = getContratosNaoEnviar('1')
@@ -429,4 +464,100 @@ order by 10 desc
     return vRetorno
   except Exception as e:
     logging.error('SYNSUITE_FUNCOES - getFila_aviso_fim_impressao_boletos() ' + str(e))
+    return 
+
+def getDadosPPOE(ppoe: str):
+  sql = f""" select 
+            c.id as contrato,
+            p."name" as cliente,
+            c.beginning_date as inicio,
+            p.city as cidade,
+            p.state as uf,
+            c.v_status as status,
+            aap.title as olt,
+            aap.code  as olt_codigo,
+            aap."type" as tipo_olt,
+            aap.ip as olt_ip,
+            aap."user" as olt_user,
+            aap."password" as olt_pass,
+            aap.port_telnet as olt_port_telnet,
+            aap.port_ftp as olt_port_ftp,
+            aap.coverage_degrees as olt_coverage_degrees,
+            aap.direction_degrees as olt_direction_degrees,
+            aap.degrees as olt_degress,
+            aap.internet_bandwidth as olt_internet_bandwidth,
+            aap.mac as olt_mac,
+            aap.mac_password as olt_mac_password,
+            aap.radius_port as olt_radius_port,
+            aap.olt_protocol ,
+            aap.secret as olt_secret,
+            ct.title as tipo_contrato,
+            c.automatic_blocking as bloqueio_automatico,
+            ci.is_combination,
+            ci.combination_contract_item_id,
+            ci.description as servico,
+            ac.title as concentrador,
+            m.title as tipo_equipamento,
+            as2.title as autenticacao,
+            aig.title as grupo_ip,
+            ai.ip ,
+            ai.netmask,
+            auc."user" as ppoe,
+            auc."password" as ppoe_senha,
+            auc.mac as ppoe_mac,
+            auc.equipment_user as ppoe_user_equipament,
+            auc.equipment_port as ppoe_equipment_port,
+            auc.equipment_serial_number as ppoe_equipment_serial_number,
+            auc."password" as ppoe_user_pass,
+            auc.wireless_mac as ppoe_wireless_mac,
+            auc.wifi_name as ppoe_wifi_name,
+            auc.wifi_password as ppoe_wifi_pass,
+            auc.fiber_mac as ppoe_fiber_mac,
+            auc.port_olt as ppoe_port_olt,
+            auc.slot_olt as ppoe_slot_olt,
+            aal.title as ppoe_authenticate_adress_list,
+            auc.equipment_type as ppoe_equipment_type,
+            auc.provision_status as ppoe_provision_status,
+            auc.additional_info as ppoe_additional_info,
+            auc.vlan as ppoe_vlan
+          from contracts c 
+            inner join people p 
+              on p.id = c.client_id
+            inner join authentication_access_points aap 
+              on c.authentication_access_point_id = aap.id 
+            left join authentication_concentrators ac 
+              on (ac.id = aap.authentication_concentrator_id and ac.active )
+            left join manufacturers m 
+              on m.id = aap.manufacturer_id 
+            left join authentication_sites as2 
+              on (as2.id = aap.authentication_site_id and not as2.deleted )
+            left join authentication_ips ai 
+              on (ai.id = aap.authentication_ip_id and not ai.deleted )
+            left join authentication_ip_groups aig 
+              on (aig.id = ai.authentication_ip_group_id and not aig.deleted)
+            inner join contract_types ct 
+              on ct.id = c.contract_type_id 
+            inner join contract_items ci 
+              on (ci.contract_id = c.id 
+                  and not ci.deleted)
+            inner join authentication_contracts auc
+              on (auc.contract_id = c.id and auc.contract_item_id = ci.id and auc.active)
+            left join authentication_address_lists aal 
+              on aal.id = auc.authentication_address_list_id 
+          where auc."user" = '{ppoe}'
+          order by p."name"   
+        """
+  try:
+    if ppoe != '':
+      b = bd_conecta.conecta_db_tche()
+      cursor = b.cursor()
+      cursor.execute(sql)
+      rs = cursor.fetchall()
+      cursor.close()
+      b.close()
+      return rs
+    else:
+      return None
+  except Exception as e:
+    logging.error('SYNSUITE_FUNCOES - getDadosPPOE() ' + str(e))
     return 

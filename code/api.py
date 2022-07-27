@@ -219,7 +219,67 @@ def post_criar_fila_parcela_vencida(DDMMYYY_DDMMYYY: str):
             
     except Exception as e: 
         return {"status_code": 402, "Mensagem": "Data informada inválida. Utilize DDMMYYYY_DDMMYYY. Intervalo máximo de 1 mês.", "Exception:": str(e)}
-    
+
+@app.post("/fila/criar_fila_aviso_bloqueio_movel/{DDMMYYY_DDMMYYY}", dependencies=[Depends(JWTBearer())], status_code=status.HTTP_202_ACCEPTED, tags=["FILA"])
+def post_criar_fila_aviso_bloqueio_movel(DDMMYYY_DDMMYYY: str):
+    try:
+        intervalo = DDMMYYY_DDMMYYY.split('_') 
+        d1 = datetime.strptime(intervalo[0], '%d%m%Y')
+        d2 = datetime.strptime(intervalo[1], '%d%m%Y')
+        
+        dias = (d2 - d1).days
+        if dias > 31:
+            return {"status_code": 404, "Mensagem": "Utilize intervalo máximo de 1 mês."}
+        elif dias < 0:
+            return {"status_code": 404, "Mensagem": "Intervalo de datas incorreto."}
+        else:
+            rs = SynSuite_funcoes.getFilaAvisoBloqueioMovel(d1,d2)  #função que pega parcelas da VOALLE
+            if rs != None:
+                vFila = []
+                b = bd_conecta.conecta_db_aux()
+                
+                msgCfg = SZChat_funcoes.getMensagemConfig('9') #carrega a mensagem padrão configurada no BD Aux
+                vMsgModelo = msgCfg[0]['msgm']
+
+                #gravar no BD StayBox
+                for i in rs:
+                    vFila.append(i)
+
+                    vCelular = vCelular = SZChat_funcoes.fgetCelular(i['cell_phone_1'], i['phone']) #Valida se é celular
+
+                    if i['type_tx_id'] != 2: #JURÍDICA, não informa o nome na mensagem
+                        vNome = ''
+                    else: #FÍSICA, só envia primeiro nome
+                        vNome = str(i['name'])
+                        vNome = vNome.split()
+                        vNome = ' ' + vNome[0]
+                    
+                    vMsgm = str(vMsgModelo).replace("{vNome}", vNome )
+
+                    #grava na fila, para que o outro processo realize o envio
+                    if not StayBox_funcoes.setFilaEnvio(i['contract_id'],
+                                                 i['client_id'],
+                                                 i['name'],
+                                                 vCelular,
+                                                 '0',
+                                                 vMsgm,
+                                                 '9',
+                                                 i['frt_id'],
+                                                 b
+                                                ):
+                        b.close()
+                        return {"status_code": 404, "Mensagem": "Erro ao incluir Fila."}
+
+                b.close()
+                #return rs
+                return {"status_code": 202, "Mensagem:": "Parcelas registradas na fila!", "Resultado:": vFila}
+            else:
+                return {"status_code": 404, "Mensagem": "Nenhuma parcela foi encontrada."}
+            
+    except Exception as e: 
+        return {"status_code": 402, "Mensagem": "Data informada inválida. Utilize DDMMYYYY_DDMMYYY. Intervalo máximo de 1 mês.", "Exception:": str(e)}
+
+
 @app.post("/fila/criar_fila_aviso_bloqueio/{DDMMYYY}", dependencies=[Depends(JWTBearer())], status_code=status.HTTP_202_ACCEPTED, tags=["FILA"])
 def post_criar_fila_aviso_bloqueio(DDMMYYY: str):
 
