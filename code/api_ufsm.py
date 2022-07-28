@@ -47,15 +47,19 @@ app.add_middleware(
 @app.get("/get_dados/{ppoe}", tags=["UFSM"])
 async def get_dados(ppoe: str):
     try:
-        print(ppoe)
+
+        headers = {"Content-Type": "application/json",
+                   "Access-Control-Allow-Methods": "GET",
+                   "Access-Control-Allow-Headers": "*",
+                   "Access-Control-Allow-Origin": "*"}
+        
         logging.debug(ppoe)
         rs = getDadosPPOE(ppoe)
-        return rs
+        return JSONResponse(headers=headers, content=rs)
     except Exception as e: 
         logging.error('API UFSM - Código de Status: 404. ' + str(e))
         print(str(e))
         return JSONResponse(status_code = status.HTTP_404_NOT_FOUND, content={'status':'false','message':'Ver LOG.'})
-        #return {"status_code": 404, "Exception:": str(e)}
 
 if __name__ == "__main__":
     cwd = Path(__file__).parent.resolve()
