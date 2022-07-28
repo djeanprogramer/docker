@@ -1,5 +1,6 @@
 import requests
 import json
+from SynSuite_funcoes import getSMS_Zenvia
 
 
 def fZenviaSendSMS(vToken, vFrom, vTo, vMsg: str):
@@ -29,6 +30,12 @@ def fZenviaSendSMS(vToken, vFrom, vTo, vMsg: str):
         print('ZENDESK ' + str(e))
         return 0
 
-#if __name__ == "__main__":
-#    vTokenAPI = 'yBy1f97YFIb7P191X-ajJKRlsw9GU920GaNF'
-#    fZenviaSendSMS(vTokenAPI, '5555996515339', '5555991311992','FUNCIONOU A API DO ZENVIA SMS')
+if __name__ == "__main__":
+    vTokenAPI = 'yBy1f97YFIb7P191X-ajJKRlsw9GU920GaNF'
+    res = getSMS_Zenvia()
+    for r in res:
+        vMsgSMS = f"TCHE TURBO: Sua fatura esta disponivel para pagamento! Vcto {r['vencimento']}, {r['valor']} Linha digitavel: {r['linha_digitavel']}"
+        print(r['celular'])
+        print(vMsgSMS)
+        fZenviaSendSMS(vTokenAPI, '', r['celular'] ,vMsgSMS)
+        print('-------------------')

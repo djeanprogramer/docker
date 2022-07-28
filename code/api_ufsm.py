@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 from pathlib import Path
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
+import json
 
 app = FastAPI()
 
@@ -56,8 +57,10 @@ async def get_dados(ppoe: str):
                    "Access-Control-Allow-Headers": "*",
                    "Access-Control-Allow-Origin": "*"}
         
+        print(ppoe)
         logging.debug(ppoe)
         rs = getDadosPPOE(ppoe)
+        #return rs
         return JSONResponse(headers=headers, content=rs)
     except Exception as e: 
         logging.error('API UFSM - Código de Status: 404. ' + str(e))
