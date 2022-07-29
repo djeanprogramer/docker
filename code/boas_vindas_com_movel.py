@@ -214,6 +214,7 @@ def main():
                   continue
 
                 vNome = ''
+                vMsgmEnvio = ''
 
                 vValor = str(a['amount'])
                 vValor = 'R$ ' +  vValor.replace(".",",")
@@ -258,6 +259,7 @@ def main():
                 else:
                   vMsgmEnvio = vMsgmEnvio.replace("{vportabilidade}", "")
 
+                vNome = ''
                 vNome = str(a['nome']).split()
                 vMsgmEnvio = vMsgmEnvio.replace("{nome}", vNome[0] )
 

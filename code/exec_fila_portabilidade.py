@@ -58,48 +58,47 @@ def main():
             vATENDDANCE_ID = SZChat_funcoes.getAtenddanceID(4) #BOAS VINDAS
 
         for m in mensagens:
-          if datetime.now().weekday() != 7:
-            b = bd_conecta.conecta_db_aux()
-            vCelular = m['celular']
-            #vCelular = '5555996515339'
-            vMsgm = m['msgm']
+          b = bd_conecta.conecta_db_aux()
+          vCelular = m['celular']
+          #vCelular = '5555996515339'
+          vMsgm = m['msgm']
 
-            vAss = 'PORTABILIDADE - ' +  m['nome']
-            credenciais = {
-                'platform_id': vCelular,
-                'channel_id': '615c4aa0a0d3c7001208e518',
-                'type': 'text',
-                'message': vMsgm,
-                'subject': vAss,
-                'token': vUsr_Token,
-                'agent' : vUsr,
-                'attendance_id': vATENDDANCE_ID,
-                'close_session': str(vClosed_session)
-            }
+          vAss = 'PORTABILIDADE - ' +  m['nome']
+          credenciais = {
+              'platform_id': vCelular,
+              'channel_id': '615c4aa0a0d3c7001208e518',
+              'type': 'text',
+              'message': vMsgm,
+              'subject': vAss,
+              'token': vUsr_Token,
+              'agent' : vUsr,
+              'attendance_id': vATENDDANCE_ID,
+              'close_session': str(vClosed_session)
+          }
 
-            send = SZChat_funcoes.fEnviaWhatsapp(credenciais, vTOKEN_APP, vApiSend)
-            if send == 200:
-              logging.debug('Código de Status: 200. '+ str(vCelular) )
-            else:
-              logging.debug('Código de Status: ' + str(send) + '. ' + str(vCelular) )
-            
-            #depois de disparar no szchat, grava o registro no bdaux
-            StayBox_funcoes.setLogEnvio('8', m['contract_id'], m['client_id'], m['nome'], vCelular, str(send), 0, b)
+          send = SZChat_funcoes.fEnviaWhatsapp(credenciais, vTOKEN_APP, vApiSend)
+          if send == 200:
+            logging.debug('Código de Status: 200. '+ str(vCelular) )
+          else:
+            logging.debug('Código de Status: ' + str(send) + '. ' + str(vCelular) )
+          
+          #depois de disparar no szchat, grava o registro no bdaux
+          StayBox_funcoes.setLogEnvio('8', m['contract_id'], m['client_id'], m['nome'], vCelular, str(send), 0, b)
 
-            #apaga da FILA
-            StayBox_funcoes.dropFilaEnvioItem(m['id'], b)
+          #apaga da FILA
+          StayBox_funcoes.dropFilaEnvioItem(m['id'], b)
 
-            #atrasa o envio para não bloquear o número
-            if vIntervalo_segundos > 0:
-              b.close()
-              rand = random.randint(vIntervalo_segundos, vIntervalo_segundos + 5)
-              logging.debug('PORTABILIDADE - SLEEP - ' + str(rand))
-              print(rand)
-              sleep(rand)
-            else:
-              logging.info('PORTABILIDADE - Por favor, defina o campo de intervalo de mensagens na tabela de configuração')
-              b.close()
-              sys.exit('DEFINA O SLEEP NA CONFIGURAÇÃO DA MENSAGEM');                  
+          #atrasa o envio para não bloquear o número
+          if vIntervalo_segundos > 0:
+            b.close()
+            rand = random.randint(vIntervalo_segundos, vIntervalo_segundos + 5)
+            logging.debug('PORTABILIDADE - SLEEP - ' + str(rand))
+            print(rand)
+            sleep(rand)
+          else:
+            logging.info('PORTABILIDADE - Por favor, defina o campo de intervalo de mensagens na tabela de configuração')
+            b.close()
+            sys.exit('DEFINA O SLEEP NA CONFIGURAÇÃO DA MENSAGEM');                  
         
         SZChat_funcoes.fLogoutToken(vTOKEN_APP, vApiLogout)
         print('LOGOUT OK')
