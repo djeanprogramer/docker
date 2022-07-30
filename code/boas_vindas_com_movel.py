@@ -213,7 +213,6 @@ def main():
                 elif res > 0: #já enviou mensagem de boas vindas para este número no dia de hoje
                   continue
 
-                vNome = ''
                 vMsgmEnvio = ''
 
                 vValor = str(a['amount'])
@@ -259,9 +258,11 @@ def main():
                 else:
                   vMsgmEnvio = vMsgmEnvio.replace("{vportabilidade}", "")
 
-                vNome = ''
-                vNome = str(a['nome']).split()
-                vMsgmEnvio = vMsgmEnvio.replace("{nome}", vNome[0] )
+                if a['vpjpf'] == 'PF':
+                  vNome = str(a['nome']).split()
+                  vMsgmEnvio = vMsgmEnvio.replace("{nome}", vNome[0] )
+                else:
+                  vMsgmEnvio = vMsgmEnvio.replace("{nome}", '')
 
                 vSubjec = f"""B Móvel: {a['contrato_id']} - {a['nome']} """
 
@@ -323,6 +324,8 @@ def main():
 
                 #atrasa o envio para não bloquear o número
                 if vIntervalo_segundos > 0:
+                  vMsgm = ''
+                  vMsgEnvio = ''
                   rand = random.randint(vIntervalo_segundos, vIntervalo_segundos + 5)
                   logging.debug('BOAS_VINDAS - SLEEP - ' + str(rand))
                   sleep(rand)

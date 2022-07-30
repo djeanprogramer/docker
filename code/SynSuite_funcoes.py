@@ -76,7 +76,7 @@ def getAtivacoesDoDiaMovel():
                   'EX'
                 else
                   'PF'		
-                  end as vPJPF,
+                  end as vpjpf,
                   rtrim(p.name) as nome,
                   p.phone as telefone,  
                   p.cell_phone_1 as celular,
